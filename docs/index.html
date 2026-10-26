@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fuzzkit — Agentic-First Fuzzy String Matching</title>
+    <meta name="description" content="Agentic-first fuzzy string matching service. Levenshtein, Jaro-Winkler, Soundex, Metaphone, NYSIIS, fuzzy find, filter, and rank.">
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --green: #3fb950;
+            --yellow: #d29922;
+            --purple: #bc8cff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        .container { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 64px 0 48px;
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+        }
+        header h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.5px; }
+        header h1 span { color: var(--accent); }
+        header .tagline { color: var(--muted); font-size: 18px; margin-top: 8px; }
+        .badges { margin-top: 20px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .badge.go { color: var(--accent); border-color: var(--accent); }
+        .badge.mcp { color: var(--purple); border-color: var(--purple); }
+        .badge.stateless { color: var(--green); border-color: var(--green); }
+        section { padding: 48px 0; border-bottom: 1px solid var(--border); }
+        section h2 { font-size: 24px; font-weight: 600; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .card h3 { font-size: 16px; margin-bottom: 8px; color: var(--accent); }
+        .card p { color: var(--muted); font-size: 14px; }
+        pre {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        code { font-family: 'SF Mono', Monaco, Consolas, monospace; }
+        .endpoint { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+        .endpoint:last-child { border-bottom: none; }
+        .method { color: var(--green); font-weight: 600; min-width: 50px; font-size: 13px; }
+        .path { color: var(--accent); font-family: monospace; font-size: 14px; }
+        .desc { color: var(--muted); font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        th { color: var(--muted); font-weight: 600; }
+        td code { color: var(--accent); }
+        .cta { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-secondary { border: 1px solid var(--border); color: var(--text); }
+        footer { padding: 32px 0; text-align: center; color: var(--muted); font-size: 14px; }
+        @media (max-width: 600px) {
+            header h1 { font-size: 28px; }
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>fuzz<span>kit</span></h1>
+            <p class="tagline">Agentic-first fuzzy string matching service</p>
+            <div class="badges">
+                <span class="badge go">Go</span>
+                <span class="badge mcp">MCP</span>
+                <span class="badge stateless">Stateless</span>
+                <span class="badge">Single Binary</span>
+                <span class="badge">Zero Config</span>
+            </div>
+            <div class="cta">
+                <a href="https://github.com/relentlessworks/fuzzkit" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/relentlessworks/fuzzkit#api-reference" class="btn btn-secondary">API Reference</a>
+            </div>
+        </div>
+    </header>
+
+    <section>
+        <div class="container">
+            <h2>Quick Start</h2>
+            <pre><code># Build and run
+make build
+./fuzzkit -no-auth
+
+# Compute Levenshtein distance
+curl 'http://localhost:8427/levenshtein?s1=kitten&s2=sitting'
+# distance=3 ratio=0.5714 s1=kitten s2=sitting
+
+# Find best match
+curl 'http://localhost:8427/find?q=appel&candidates=apple,orange,banana&algorithm=jaro-winkler'
+# match=apple score=0.9333 algorithm=jaro-winkler query=appel
+
+# Get Soundex code
+curl 'http://localhost:8427/soundex?s=Robert'
+# code=R163 s=Robert</code></pre>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>Principles</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Agent IS the Interface</h3>
+                    <p>No UI, no SDK. The AI agent is the user. The API is the product.</p>
+                </div>
+                <div class="card">
+                    <h3>Plain Text by Default</h3>
+                    <p>One labeled, grepable line per record. JSON on demand via ?format=json.</p>
+                </div>
+                <div class="card">
+                    <h3>Instructive Errors</h3>
+                    <p>Every 4xx includes a hint telling the agent what to do next.</p>
+                </div>
+                <div class="card">
+                    <h3>Self-Documenting</h3>
+                    <p>GET /help returns a one-page operating manual the agent loads at runtime.</p>
+                </div>
+                <div class="card">
+                    <h3>Single Static Binary</h3>
+                    <p>Go, CGO_ENABLED=0, zero external dependencies. Deploys as one file.</p>
+                </div>
+                <div class="card">
+                    <h3>MCP Connector</h3>
+                    <p>Speaks Model Context Protocol at POST /mcp for chat client integrations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>API Endpoints</h2>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/levenshtein?s1=&s2=</span>
+                <span class="desc">Levenshtein edit distance</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/damerau?s1=&s2=</span>
+                <span class="desc">Damerau-Levenshtein distance (with transpositions)</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/hamming?s1=&s2=</span>
+                <span class="desc">Hamming distance (equal-length only)</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/jaro?s1=&s2=</span>
+                <span class="desc">Jaro similarity</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/jaro-winkler?s1=&s2=</span>
+                <span class="desc">Jaro-Winkler similarity (prefix-weighted)</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/ratio?s1=&s2=</span>
+                <span class="desc">Difflib-style ratio</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/sorensen-dice?s1=&s2=</span>
+                <span class="desc">Sørensen-Dice coefficient</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/ngram?s1=&s2=&n=2</span>
+                <span class="desc">N-gram similarity</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/compare?s1=&s2=</span>
+                <span class="desc">All similarity metrics at once</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/soundex?s=</span>
+                <span class="desc">Soundex phonetic code</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/metaphone?s=</span>
+                <span class="desc">Metaphone phonetic code</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/nysiis?s=</span>
+                <span class="desc">NYSIIS phonetic code</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/find?q=&candidates=a,b,c</span>
+                <span class="desc">Best match from list</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/filter?q=&candidates=a,b,c&threshold=0.7</span>
+                <span class="desc">Filter by similarity threshold</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/rank?q=&candidates=a,b,c</span>
+                <span class="desc">All candidates ranked by score</span>
+            </div>
+            <div class="endpoint">
+                <span class="method">POST</span>
+                <span class="path">/mcp</span>
+                <span class="desc">MCP JSON-RPC 2.0 endpoint (15 tools)</span>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>Configuration</h2>
+            <table>
+                <thead>
+                    <tr><th>Flag</th><th>Env Var</th><th>Default</th><th>Description</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>-addr</code></td><td><code>FUZZKIT_ADDR</code></td><td><code>:8427</code></td><td>Listen address</td></tr>
+                    <tr><td><code>-no-auth</code></td><td><code>FUZZKIT_NO_AUTH</code></td><td><code>false</code></td><td>Disable auth (dev mode)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section>
+        <div class="container">
+            <h2>Build</h2>
+            <pre><code>make build    # CGO_ENABLED=0 go build -trimpath
+make test     # go test -race ./...
+make vet      # go vet ./...
+make run      # build and run with -no-auth</code></pre>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>fuzzkit — part of <a href="https://github.com/relentlessworks" style="color: var(--accent);">relentlessworks</a> · MIT License</p>
+        </div>
+    </footer>
+</body>
+</html>
