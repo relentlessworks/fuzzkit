@@ -5,33 +5,44 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+  workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  contents: write
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
         with:
-          path: docs
+          fetch-depth: 0
 
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Copy docs content to a temp location
+          cp -r docs /tmp/gh-pages-content
+
+          # Create or switch to gh-pages branch
+          if git show-ref --verify --quiet refs/heads/gh-pages; then
+            git checkout gh-pages
+          else
+            git checkout --orphan gh-pages
+          fi
+
+          # Clear the working tree
+          git rm -rf . 2>/dev/null || true
+
+          # Copy docs content back
+          cp -r /tmp/gh-pages-content/* .
+          cp -r /tmp/gh-pages-content/.* . 2>/dev/null || true
+
+          # Add and commit
+          git add -A
+          git commit -m "Deploy pages from ${{ github.sha }}" || echo "No changes to commit"
+
+          # Force push to gh-pages
+          git push origin gh-pages --force
